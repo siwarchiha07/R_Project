@@ -1,0 +1,31 @@
+login,name,company,location,total_stars,nb_repos_fetched,languages_list
+sindresorhus,Sindre Sorhus,,,457146,5,"JavaScript, TypeScript"
+kamranahmedse,Kamran Ahmed,roadmap.sh,United Kingdom,426260,5,"JavaScript, Shell, TypeScript"
+torvalds,Linus Torvalds,Linux Foundation,"Portland, OR",212950,5,"C, OpenSCAD"
+getify,Kyle Simpson,Getify Solutions,"Austin, TX",203886,5,JavaScript
+openai,OpenAI,,,174874,5,"Jupyter Notebook, Python, Rust, TypeScript"
+ruanyf,Ruan YiFeng,,"Shanghai, China",129096,5,Makefile
+bradtraversy,Brad Traversy,Traversy Media,Massachusetts,121230,5,"CSS, JavaScript, PHP, TypeScript"
+karpathy,Andrej,,Stanford,119085,5,"Jupyter Notebook, Python"
+tj,TJ Holowaychuk,Apex,"London, UK",73999,5,"Go, JavaScript, Shell"
+github,GitHub,,"San Francisco, CA",62715,5,"Go, JavaScript, TypeScript"
+peng-zhihui,稚晖,HUAWEI Research,Shanghai,43784,5,C
+microsoft,Microsoft,,"Redmond, WA",41503,5,"Python, TypeScript"
+google,Google,,,38820,5,"C++, Go, Python, Rust"
+wesbos,Wes Bos,me,"Hamilton, Ontario",36985,5,"HTML, JavaScript, TypeScript"
+gustavoguanabara,Gustavo Guanabara,Curso em Vídeo,"Rio de Janeiro, Brazil",26900,5,HTML
+gaearon,dan,@bluesky-social ,,22556,5,"CSS, JavaScript, TypeScript"
+JakeWharton,Jake Wharton,@cashapp / @square,"Pittsburgh, PA, USA",18403,5,"C, HTML, Kotlin, Python"
+rafaballerini,Rafaella Ballerini,,"Santa Catarina, Brasil",14771,5,"HTML, Python"
+benawad,Ben Awad,,"Austin, TX",13641,5,TypeScript
+kentcdodds,Kent C. Dodds,@epicweb-dev ,"Salt Lake City, Utah, USA",12216,5,"HTML, JavaScript, MDX, TypeScript"
+filipedeschamps,Filipe Deschamps,,Brasil,11762,5,"HTML, JavaScript"
+michaelliao,Crypto Michael,,"Beijing, China",10568,5,JavaScript
+geohot,George Hotz,@commaai @tinygrad ,"San Diego, CA",6939,5,"CSS, Python, Shell"
+llSourcell,Siraj Raval,,"San Francisco, CA",6208,5,"Jupyter Notebook, Python"
+yyx990803,Evan You,vuejs,Singapore,5941,5,"HTML, JavaScript, PHP"
+paulirish,Paul Irish,"Google Chrome, ♥z",,5386,5,"HTML, JavaScript, Shell"
+diego3g,Diego Fernandes,@Rocketseat ,Brasil,4367,5,"JavaScript, TypeScript"
+addyosmani,Addy Osmani,Google,"Mountain View, California",4142,5,"JavaScript, TypeScript"
+ry,Ryan Dahl,@denoland ,New York City,2652,5,"JavaScript, Python, TypeScript"
+taylorotwell,Taylor Otwell,Laravel,"Little Rock, AR",606,5,"Blade, JavaScript, PHP"
