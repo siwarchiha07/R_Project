@@ -11,64 +11,49 @@ format:
 engine: knitr
 ---
 
- 1. Introduction
-Ce rapport présente une analyse statistique d'un dataset réel contenant les profils des développeurs et organisations les plus populaires sur GitHub. L'objectif est de comprendre quels facteurs (langages, localisation, entreprise) influencent la popularité mesurée par le nombre d'étoiles (\`total_stars\`).
+## 1. Introduction
 
-2. Préparation des données
+Ce rapport présente une analyse statistique d'un dataset réel contenant les profils des développeurs et organisations les plus populaires sur GitHub. L'objectif est de comprendre quels facteurs (langages, localisation, entreprise) influencent la popularité mesurée par le nombre d'étoiles (`total_stars`).
+
+## 2. Préparation des données
+
 Nous importons les données et effectuons un nettoyage pour traiter les valeurs manquantes et extraire les langages de programmation.
 
-\`\`\`{r}
-#\| label: setup
-#\| message: false
-#\| warning: false
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
 
 library(tidyverse)
 library(wordcloud)
 
-## \# Chargement
+# Chargement
+df <- read.csv("profiles_index.csv", stringsAsFactors = FALSE)
 
-```{df <- read.csv("profiles_index.csv", stringsAsFactors = FALSE)}
-```
-
-## \# Nettoyage
-
-```{df$company[is.na(df$company) | df$company == ""] <- "Indépendant"}
+# Nettoyage
+df$company[is.na(df$company) | df$company == ""] <- "Indépendant"
 df$location[is.na(df$location) | df$location == ""] <- "Inconnue"
-```
 
-\# Création des variables
-
-```{df <- df %>%}
+# Création des variables
+df <- df %>%
   mutate(
     Python = grepl("Python", languages_list, ignore.case = TRUE),
     JavaScript = grepl("JavaScript", languages_list, ignore.case = TRUE),
     num_languages = str_count(languages_list, ",") + 1
   )
-```
-
-## 3. Analyse Descriptive
-
-La distribution des étoiles est très asymétrique. La moyenne est de `r round(mean(df$total_stars))` étoiles alors que la médiane est de `r median(df$total_stars)`.
-
-```{#| label: visualisations}
+#| label: visualisations
 ggplot(df, aes(x = total_stars)) +
   geom_histogram(fill = "steelblue", bins = 15) +
   labs(title = "Distribution des Stars", y = "Fréquence") +
   theme_minimal()
+cor_test <- cor.test(df$num_languages, df$total_stars, method = "spearman")
 ```
 
-## 4. Analyse Avancée
-
-### Corrélation entre diversité et popularité
-
-Est-ce que maîtriser plus de langages rapporte plus d'étoiles ?
-
-```{cor_test <- cor.test(df$num_languages, df$total_stars, method = "spearman")}
-
+```{}
 ```
 
-Le test de Spearman donne un coefficient de `r round(cor_test$estimate, 2)`, ce qui indique une corrélation...
+```{}
+```
 
-## 5. Conclusion
-
-L'étude montre que la popularité sur GitHub est dominée par quelques "superstars" et que l'usage de certains langages comme Python semble lié à des scores élevés.
+```{}
+```
