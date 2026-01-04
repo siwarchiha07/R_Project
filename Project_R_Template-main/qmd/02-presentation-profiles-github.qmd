@@ -1,0 +1,577 @@
+---
+title: "Analyse Statistique des Profils GitHub Influents"
+date: today
+format: 
+  revealjs:
+    scrollable: true
+webr:
+  packages: ['tidyverse', 'ggplot2', 'wordcloud', 'RColorBrewer']
+filters:
+  - webr
+css: styles.css
+---
+
+## Introduction
+
+Ce projet porte sur l'analyse statistique des profils GitHub les plus influents à travers le monde.
+
+GitHub étant la plateforme de référence pour le développement collaboratif, le nombre d'étoiles (stars) récoltées par un utilisateur est devenu un indicateur clé de sa popularité et de son impact dans la communauté "Open Source".
+
+---
+
+## Objectifs de l'étude
+
+Nous tenterons de répondre à plusieurs questions fondamentales :
+
+- **Distribution** : Comment la popularité est-elle distribuée entre ces différents profils ?
+
+- **Langages** : Le choix des langages de programmation influence-t-il le succès ?
+
+- **Types** : Existe-t-il des différences entre les comptes individuels et les organisations ?
+
+- **Diversité** : La diversité technologique est-elle corrélée à la popularité ?
+
+---
+
+## Jeu de données
+
+30 développeurs et organisations majeures :
+
+- Google, Microsoft, OpenAI
+- Développeurs influents (Linus Torvalds, Evan You, etc.)
+- Variables : étoiles, langages, localisation, entreprise
+
+```{webr-r}
+# Lecture du fichier CSV (chemin relatif depuis qmd/)
+#df <- read.csv("../profiles_index.csv", stringsAsFactors = FALSE)
+df <- read.csv("https://raw.githubusercontent.com/siwarchiha07/R_Project/main/profiles_index.csv", stringsAsFactors = FALSE)
+cat("Dimensions du dataset :", dim(df), "\n")
+cat("Nombre de profils :", nrow(df), "\n")
+cat("Variables :", ncol(df), "\n")
+```
+
+---
+
+## Aperçu des données
+
+```{webr-r}
+head(df, 10)
+```
+
+---
+
+## Nettoyage des données
+
+### Remplacement des valeurs manquantes
+
+```{webr-r}
+# Remplacement des valeurs vides par "Unknown"
+df$location[df$location == "" | is.na(df$location)] <- "Unknown"
+df$company[df$company == "" | is.na(df$company)] <- "Unknown"
+
+cat("Valeurs manquantes traitées\n")
+cat("Locations 'Unknown' :", sum(df$location == "Unknown"), "\n")
+cat("Companies 'Unknown' :", sum(df$company == "Unknown"), "\n")
+```
+
+---
+
+## Création de variables pour les langages
+
+```{webr-r}
+# Création de variables booléennes pour les langages
+df <- df %>%
+  mutate(
+    has_python = grepl("Python", languages_list),
+    has_javascript = grepl("JavaScript", languages_list),
+    has_typescript = grepl("TypeScript", languages_list)
+  )
+
+cat("=== Répartition des langages ===\n")
+cat("Python :", sum(df$has_python), "profils\n")
+cat("JavaScript :", sum(df$has_javascript), "profils\n")
+cat("TypeScript :", sum(df$has_typescript), "profils\n")
+```
+
+---
+
+## Statistiques descriptives
+
+```{webr-r}
+cat("=== Statistiques sur les étoiles ===\n")
+summary(df$total_stars)
+
+cat("\n=== Statistiques sur le nombre de dépôts ===\n")
+summary(df$nb_repos_fetched)
+```
+
+---
+
+## Distribution de la popularité
+
+**Question 1** : Comment la popularité est-elle distribuée ?
+
+```{webr-r}
+library(ggplot2)
+
+ggplot(df, aes(x = total_stars)) +
+  geom_histogram(fill = "steelblue", bins = 15, color = "white") +
+  labs(
+    title = "Distribution du nombre total d'étoiles",
+    x = "Nombre d'étoiles",
+    y = "Fréquence"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## Observation : Distribution asymétrique
+
+- Quelques profils **exceptionnellement populaires** (outliers)
+- Grande majorité avec popularité **modérée**
+- **Justifie l'utilisation d'échelles logarithmiques** pour les visualisations
+
+---
+
+## Impact de Python
+
+**Question 2** : Python influence-t-il le succès ?
+
+```{webr-r}
+ggplot(df, aes(x = has_python, y = total_stars, fill = has_python)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_log10() +
+  labs(
+    title = "Popularité : Profils Python vs Autres",
+    x = "Utilise Python",
+    y = "Total Stars (Log Scale)"
+  ) +
+  scale_fill_manual(values = c("FALSE" = "#E8E8E8", "TRUE" = "#377EB8")) +
+  theme_light() +
+  theme(legend.position = "none")
+```
+
+---
+
+## Test statistique : Python
+
+```{webr-r}
+test_python <- wilcox.test(total_stars ~ has_python, data = df)
+cat("=== Test de Wilcoxon pour Python ===\n")
+print(test_python)
+
+cat("\nInterprétation :\n")
+if (test_python$p.value < 0.05) {
+  cat("✓ Différence significative (p < 0.05)\n")
+  cat("  Les profils utilisant Python ont significativement plus d'étoiles\n")
+} else {
+  cat("✗ Pas de différence significative (p >= 0.05)\n")
+}
+```
+
+---
+
+## Impact de JavaScript
+
+```{webr-r}
+ggplot(df, aes(x = has_javascript, y = total_stars, fill = has_javascript)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_log10() +
+  labs(
+    title = "Impact de JavaScript sur la popularité",
+    x = "Utilise JavaScript",
+    y = "Total Stars (Log)"
+  ) +
+  scale_fill_manual(values = c("FALSE" = "#E8E8E8", "TRUE" = "#FDB462")) +
+  theme_classic() +
+  theme(legend.position = "none")
+```
+
+---
+
+## Test statistique : JavaScript
+
+```{webr-r}
+test_javascript <- wilcox.test(total_stars ~ has_javascript, data = df)
+cat("=== Test de Wilcoxon pour JavaScript ===\n")
+print(test_javascript)
+
+cat("\nInterprétation :\n")
+if (test_javascript$p.value < 0.05) {
+  cat("✓ Différence significative détectée\n")
+} else {
+  cat("✗ Pas de différence significative\n")
+}
+```
+
+---
+
+## Organisations vs Individus
+
+**Question 3** : Différences entre organisations et individus ?
+
+```{webr-r}
+# Identification des organisations
+orgs_list <- c("openai", "github", "microsoft", "google")
+df <- df %>%
+  mutate(
+    type_profil = ifelse(login %in% orgs_list, "Organisation", "Individu")
+  )
+
+cat("=== Répartition ===\n")
+table(df$type_profil)
+```
+
+---
+
+## Visualisation : Organisations vs Individus
+
+```{webr-r}
+ggplot(df, aes(x = type_profil, y = total_stars, fill = type_profil)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_log10() +
+  labs(
+    title = "Popularité : Organisations vs Individus",
+    x = "Type de Profil",
+    y = "Total Stars (Log Scale)"
+  ) +
+  scale_fill_manual(values = c("Individu" = "#66C2A5", "Organisation" = "#FC8D62")) +
+  theme_light() +
+  theme(legend.position = "none")
+```
+
+---
+
+## Relation : Dépôts vs Popularité
+
+```{webr-r}
+ggplot(df, aes(x = nb_repos_fetched, y = total_stars)) +
+  geom_point(color = "darkgreen", size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", color = "red", linetype = "dashed", se = TRUE) +
+  labs(
+    title = "Relation : Nombre de dépôts vs Stars",
+    x = "Nombre de dépôts",
+    y = "Total Stars"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## Test de corrélation
+
+```{webr-r}
+cor_test_repos <- cor.test(df$nb_repos_fetched, df$total_stars, method = "spearman")
+cat("=== Corrélation (Spearman) : Dépôts vs Étoiles ===\n")
+cat("Rho :", round(cor_test_repos$estimate, 3), "\n")
+cat("p-value :", round(cor_test_repos$p.value, 4), "\n")
+
+if (cor_test_repos$p.value < 0.05) {
+  cat("\n✓ Corrélation significative\n")
+} else {
+  cat("\n✗ Pas de corrélation significative\n")
+}
+```
+
+---
+
+## Diversité technologique
+
+**Question 4** : La diversité est-elle corrélée à la popularité ?
+
+```{webr-r}
+# Calcul du nombre de langages par profil
+df$num_languages <- stringr::str_count(df$languages_list, ",") + 1
+
+cat("=== Statistiques sur la diversité ===\n")
+cat("Nombre moyen de langages :", round(mean(df$num_languages), 2), "\n")
+cat("Nombre médian :", median(df$num_languages), "\n")
+cat("Écart-type :", round(sd(df$num_languages), 2), "\n")
+```
+
+---
+
+## Visualisation : Diversité vs Popularité
+
+```{webr-r}
+ggplot(df, aes(x = num_languages, y = total_stars)) +
+  geom_point(aes(color = total_stars), size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "dashed") +
+  scale_y_log10() +
+  scale_color_gradient(low = "blue", high = "red") +
+  labs(
+    title = "Diversité technologique vs Popularité",
+    x = "Nombre de langages utilisés",
+    y = "Total Stars (Log)",
+    color = "Étoiles"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right")
+```
+
+---
+
+## Corrélation : Diversité technologique
+
+```{webr-r}
+cor_test_lang <- cor.test(df$num_languages, df$total_stars, method = "spearman")
+cat("=== Corrélation (Spearman) : Langages vs Popularité ===\n")
+cat("Rho :", round(cor_test_lang$estimate, 3), "\n")
+cat("p-value :", round(cor_test_lang$p.value, 4), "\n")
+
+if (cor_test_lang$p.value < 0.05) {
+  if (cor_test_lang$estimate > 0) {
+    cat("\n✓ Corrélation positive significative\n")
+    cat("  Plus de langages → Plus de popularité\n")
+  } else {
+    cat("\n✓ Corrélation négative significative\n")
+    cat("  Plus de langages → Moins de popularité\n")
+  }
+} else {
+  cat("\n✗ Pas de corrélation significative\n")
+}
+```
+
+---
+
+## Identification des Superstars (Top 25%)
+
+```{webr-r}
+seuil_top <- quantile(df$total_stars, 0.75)
+df$is_superstar <- df$total_stars >= seuil_top
+
+cat("=== Identification des Superstars ===\n")
+cat("Seuil (top 25%) :", round(seuil_top, 0), "étoiles\n")
+cat("Nombre de superstars :", sum(df$is_superstar), "\n\n")
+
+superstars <- df[df$is_superstar, c("login", "name", "total_stars")]
+print(superstars)
+```
+
+---
+
+## Comparaison : Langages des Superstars
+
+```{webr-r}
+lang_summary <- df %>%
+  group_by(is_superstar) %>%
+  summarise(
+    Pct_Python = mean(has_python) * 100,
+    Pct_JS = mean(has_javascript) * 100,
+    Pct_TS = mean(has_typescript) * 100,
+    .groups = "drop"
+  )
+
+cat("=== Pourcentage d'utilisation des langages ===\n")
+print(lang_summary)
+```
+
+---
+
+## Visualisation : Langages des Superstars
+
+```{webr-r}
+lang_summary_long <- lang_summary %>%
+  pivot_longer(
+    cols = c(Pct_Python, Pct_JS, Pct_TS),
+    names_to = "Langage",
+    values_to = "Pourcentage"
+  ) %>%
+  mutate(
+    Langage = case_when(
+      Langage == "Pct_Python" ~ "Python",
+      Langage == "Pct_JS" ~ "JavaScript",
+      Langage == "Pct_TS" ~ "TypeScript"
+    ),
+    Type = ifelse(is_superstar, "Superstar", "Autres")
+  )
+
+ggplot(lang_summary_long, aes(x = Langage, y = Pourcentage, fill = Type)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.8) +
+  labs(
+    title = "Utilisation des langages : Superstars vs Autres",
+    x = "Langage de programmation",
+    y = "Pourcentage (%)",
+    fill = "Type"
+  ) +
+  scale_fill_manual(values = c("Superstar" = "#E31A1C", "Autres" = "#1F78B4")) +
+  theme_minimal()
+```
+
+---
+
+## Détection des valeurs atypiques (Outliers)
+
+```{webr-r}
+# Méthode IQR
+Q1 <- quantile(df$total_stars, 0.25)
+Q3 <- quantile(df$total_stars, 0.75)
+IQR_val <- Q3 - Q1
+borne_sup <- Q3 + 1.5 * IQR_val
+
+outliers <- df[df$total_stars > borne_sup, ]
+
+cat("=== Détection des outliers (méthode IQR) ===\n")
+cat("Q1 :", round(Q1, 0), "\n")
+cat("Q3 :", round(Q3, 0), "\n")
+cat("Borne supérieure :", round(borne_sup, 0), "\n")
+cat("Nombre d'outliers :", nrow(outliers), "\n\n")
+cat("=== Profils identifiés ===\n")
+print(outliers[, c("login", "name", "total_stars")])
+```
+
+---
+
+## Visualisation des Outliers
+
+```{webr-r}
+ggplot(df, aes(x = "", y = total_stars)) +
+  geom_boxplot(fill = "lightblue", alpha = 0.7, outlier.color = "red", outlier.size = 3) +
+  scale_y_log10() +
+  labs(
+    title = "Distribution avec détection des outliers",
+    subtitle = "Les points rouges = valeurs atypiques",
+    x = "",
+    y = "Total Stars (Log Scale)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## Nuage de mots : Entreprises
+
+```{webr-r}
+library(wordcloud)
+library(RColorBrewer)
+
+comp_freq <- df %>%
+  filter(company != "Unknown" & company != "" & !is.na(company)) %>%
+  count(company, sort = TRUE)
+
+if (nrow(comp_freq) > 0) {
+  wordcloud(
+    words = comp_freq$company,
+    freq = comp_freq$n,
+    min.freq = 1,
+    colors = brewer.pal(8, "Dark2"),
+    random.order = FALSE,
+    rot.per = 0.35,
+    scale = c(3, 0.5)
+  )
+}
+```
+
+---
+
+## Synthèse des résultats
+
+### 1. Distribution de la popularité
+
+- Distribution **fortement asymétrique**
+- Médiane : `r round(median(df$total_stars), 0)` étoiles
+- Quelques profils exceptionnels (outliers)
+
+### 2. Impact des langages
+
+- **Python** et **JavaScript** sont très représentés
+- Tests statistiques permettent d'évaluer l'impact
+
+### 3. Organisations vs Individus
+
+- Organisations majeures très populaires
+- Interprétation prudente (petit échantillon)
+
+---
+
+## Synthèse des résultats (suite)
+
+### 4. Diversité technologique
+
+```{webr-r}
+cat("=== SYNTHÈSE ===\n\n")
+cat("1. Nombre moyen de langages :", round(mean(df$num_languages), 2), "\n")
+cat("2. Corrélation diversité-popularité :", round(cor_test_lang$estimate, 3), "\n")
+cat("3. p-value :", round(cor_test_lang$p.value, 4), "\n\n")
+
+cat("Interprétation :\n")
+if (cor_test_lang$p.value < 0.05) {
+  if (cor_test_lang$estimate > 0) {
+    cat("✓ Diversité technologique associée à plus de popularité\n")
+  } else {
+    cat("✓ Spécialisation associée à plus de popularité\n")
+  }
+} else {
+  cat("✗ Pas de lien significatif entre diversité et popularité\n")
+}
+```
+
+---
+
+## Limitations
+
+1. **Taille de l'échantillon** : 30 profils est relativement petit
+
+2. **Biais de sélection** : Profils déjà parmi les plus populaires
+
+3. **Facteurs confondants** : 
+   - Qualité du code
+   - Documentation
+   - Communauté
+   - Timing et visibilité
+
+---
+
+## Perspectives d'extension
+
+- **Augmenter l'échantillon** : Analyser plus de profils
+
+- **Variables temporelles** : Évolution dans le temps
+
+- **Autres métriques** : Forks, contributions, issues
+
+- **Analyse géographique** : Impact de la localisation
+
+- **Analyse de réseaux** : Relations entre contributeurs
+
+---
+
+## Conclusion
+
+Cette analyse révèle des **patterns intéressants** sur les facteurs associés à la popularité sur GitHub :
+
+✓ Distribution asymétrique de la popularité
+
+✓ Rôle des langages de programmation
+
+✓ Différences organisations/individus
+
+✓ Importance de considérer plusieurs facteurs simultanément
+
+---
+
+## Questions ?
+
+**Méthodologie** : R + Tidyverse + Tests statistiques
+
+**Données** : 30 profils GitHub influents
+
+**Résultats** : Visualisations + Tests statistiques + Interprétations
+
+---
+
+## Références
+
+- Wickham, H., & Grolemund, G. (2016). *R for Data Science*. O'Reilly Media.
+- Wickham, H., et al. (2019). Welcome to the tidyverse. *Journal of Open Source Software*, 4(43), 1686.
+- R Core Team (2023). *R: A language and environment for statistical computing*.
+
+---
+
+## Fin de la présentation
+
+Merci pour votre attention !
+
+**Analyse réalisée avec R, Tidyverse et Quarto**
+

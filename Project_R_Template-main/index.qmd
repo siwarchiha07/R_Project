@@ -1,0 +1,47 @@
+---
+title: "Analyse Statistique des Profils GitHub Influents"
+subtitle: "Projet d'analyse de données avec R et Tidyverse"
+---
+
+## Introduction
+
+Ce projet porte sur l'analyse statistique des profils GitHub les plus influents à travers le monde. GitHub étant la plateforme de référence pour le développement collaboratif, le nombre d'étoiles (stars) récoltées par un utilisateur est devenu un indicateur clé de sa popularité et de son impact dans la communauté "Open Source".
+
+L'objectif de cette étude est de comprendre les caractéristiques de ces profils d'exception. À l'aide d'un jeu de données réel regroupant 30 développeurs et organisations majeures (tels que Google, Microsoft ou OpenAI), nous tenterons de répondre à plusieurs questions fondamentales :
+
+* Comment la popularité est-elle distribuée entre ces différents profils ?
+* Le choix des langages de programmation (comme Python ou JavaScript) influence-t-il le succès d'un profil ?
+* Existe-t-il des disparités géographiques ou des différences notables entre les comptes individuels et les organisations ?
+
+## Méthodologie
+
+Pour mener à bien cette analyse, nous utiliserons le langage de programmation **R** ainsi que les outils du **Tidyverse**. Notre démarche suivra les étapes classiques de la science des données : 
+
+1. **Chargement et exploration des données** - Compréhension de la structure du jeu de données
+2. **Nettoyage et transformation** - Préparation des données pour l'analyse
+3. **Analyse descriptive** - Statistiques descriptives et visualisations
+4. **Tests statistiques** - Validation des hypothèses avec des tests appropriés
+5. **Interprétation des résultats** - Conclusion et synthèse
+
+## Structure du Projet
+
+Ce site web contient :
+
+* [**Analyse Principale**](qmd/01-analyse-profiles-github.qmd) - Analyse complète des profils GitHub
+
+## Technologies Utilisées
+
+* **R** - Langage de programmation statistique
+* **Tidyverse** - Collection de packages R pour la science des données
+* **ggplot2** - Création de graphiques
+* **dplyr** - Manipulation de données
+* **Quarto** - Publication scientifique reproductible
+
+## Données
+
+Le jeu de données `profiles_index.csv` contient les informations sur 30 profils GitHub incluant :
+- Nom d'utilisateur (login) et nom réel
+- Entreprise et localisation
+- Nombre total d'étoiles (total_stars)
+- Nombre de dépôts analysés
+- Liste des langages de programmation utilisés

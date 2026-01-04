@@ -1,0 +1,569 @@
+---
+title: "Analyse Statistique des Profils GitHub Influents"
+date: today
+format:
+  html:
+    toc: true
+    number-sections: true
+    code-fold: false
+    code-summary: "Afficher le code"
+webr:
+  packages: ['tidyverse', 'ggplot2', 'wordcloud', 'RColorBrewer', 'stringr']
+filters:
+  - webr
+---
+
+# Introduction
+
+Ce document présente une analyse statistique complète des profils GitHub les plus influents à travers le monde. GitHub est la plateforme de référence pour le développement collaboratif, et le nombre d'étoiles (stars) récoltées par un utilisateur est devenu un indicateur clé de sa popularité et de son impact dans la communauté Open Source.
+
+## Objectifs de l'analyse
+
+Nous tenterons de répondre aux questions suivantes :
+
+1. **Distribution de la popularité** : Comment la popularité est-elle distribuée entre ces différents profils ?
+2. **Impact des langages** : Le choix des langages de programmation (comme Python ou JavaScript) influence-t-il le succès d'un profil ?
+3. **Types de profils** : Existe-t-il des différences notables entre les comptes individuels et les organisations ?
+4. **Diversité technologique** : La diversité des langages utilisés est-elle corrélée à la popularité ?
+
+# Chargement des bibliothèques et des données
+
+## Installation et chargement des packages
+
+```{webr-r}
+# Installation des packages (si nécessaire)
+# install.packages("tidyverse")
+# install.packages("wordcloud")
+# install.packages("RColorBrewer")
+
+# Chargement des bibliothèques
+library(tidyverse)
+library(wordcloud)
+library(RColorBrewer)
+```
+
+## Lecture du fichier de données
+
+```{webr-r}
+# Lecture du fichier CSV (remonter d'un niveau depuis qmd/)
+df <- read.csv("https://raw.githubusercontent.com/siwarchiha07/R_Project/main/profiles_index.csv", stringsAsFactors = FALSE)
+
+# Aperçu des données
+cat("Dimensions du dataset :", dim(df), "\n")
+```
+
+```{webr-r}
+# Affichage des premières lignes
+head(df)
+```
+
+```{webr-r}
+# Structure des données (vérification des types de colonnes)
+str(df)
+```
+
+**Interprétation :** Le dataset contient 30 profils GitHub avec 7 variables principales. La structure des données révèle que chaque profil possède un identifiant unique (login), des informations personnelles (nom, entreprise, localisation), ainsi que des métriques quantitatives (total_stars, nb_repos_fetched) et qualitatives (languages_list). La lecture depuis une URL garantit que les données sont toujours à jour et accessibles.
+
+# Nettoyage et transformation des données
+
+## Remplacement des valeurs manquantes
+
+```{webr-r}
+# Remplacement des valeurs vides par "Unknown" dans Location et Company
+df$location[df$location == "" | is.na(df$location)] <- "Unknown"
+df$company[df$company == "" | is.na(df$company)] <- "Unknown"
+```
+
+**Interprétation :** Le remplacement des valeurs manquantes par "Unknown" permet de conserver tous les profils dans l'analyse sans perte d'information. Cette approche est appropriée car certaines informations peuvent simplement ne pas être renseignées par les utilisateurs GitHub plutôt que d'être réellement manquantes. Cela évite les biais liés à l'élimination des données incomplètes.
+
+## Création de variables "flags" pour les langages
+
+```{webr-r}
+# Création de variables booléennes pour les langages les plus populaires
+df <- df %>%
+  mutate(
+    has_python = grepl("Python", languages_list),
+    has_javascript = grepl("JavaScript", languages_list),
+    has_typescript = grepl("TypeScript", languages_list)
+  )
+
+# Vérification du résultat
+head(df[, c("login", "total_stars", "has_python", "has_javascript", "has_typescript")])
+```
+
+**Interprétation :** La création de variables booléennes facilite l'analyse comparative entre profils utilisant ou non un langage donné. Ces variables permettent de tester si l'utilisation d'un langage spécifique est associée à une popularité différente. Python, JavaScript et TypeScript sont choisis car ce sont parmi les langages les plus populaires et demandés dans l'écosystème de développement moderne.
+
+# Analyse descriptive et graphiques
+
+## Statistiques descriptives
+
+```{webr-r}
+# Statistiques descriptives pour les variables quantitatives
+summary(df[, c("total_stars", "nb_repos_fetched")])
+```
+
+```{webr-r}
+# Fréquences pour certaines variables qualitatives
+cat("\n=== Distribution par langage Python ===\n")
+table(df$has_python)
+
+cat("\n=== Distribution par langage JavaScript ===\n")
+table(df$has_javascript)
+
+cat("\n=== Distribution par langage TypeScript ===\n")
+table(df$has_typescript)
+```
+
+**Interprétation :** Les statistiques descriptives révèlent une importante variabilité dans le nombre d'étoiles, avec des valeurs extrêmes qui suggèrent une distribution asymétrique. La médiane et la moyenne du nombre d'étoiles sont probablement très différentes, indiquant la présence de quelques profils exceptionnellement populaires. Les tableaux de fréquences montrent la prévalence de chaque langage dans l'échantillon, permettant d'identifier les langages les plus représentés.
+
+## Distribution du nombre total d'étoiles
+
+```{webr-r}
+# Histogramme de la distribution des étoiles
+ggplot(df, aes(x = total_stars)) +
+  geom_histogram(fill = "steelblue", bins = 15, color = "white") +
+  labs(
+    title = "Distribution du nombre total d'étoiles",
+    subtitle = "Répartition de la popularité parmi les profils GitHub",
+    x = "Nombre d'étoiles",
+    y = "Fréquence"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12)
+  )
+```
+
+**Interprétation :** L'histogramme révèle une distribution fortement asymétrique (skewed right) avec une queue longue vers les valeurs élevées. Cela signifie que la majorité des profils ont un nombre modéré d'étoiles, tandis qu'un petit nombre de profils concentrent une part disproportionnée de la popularité totale. Cette distribution suit probablement une loi de Pareto (loi des 80/20), caractéristique des systèmes sociaux où quelques acteurs dominent.
+
+## Impact des langages sur la popularité
+
+### Python
+
+```{webr-r}
+# Boxplot : Python vs les autres
+ggplot(df, aes(x = has_python, y = total_stars, fill = has_python)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_log10() +  # Utilisation d'une échelle log car les écarts sont énormes
+  labs(
+    title = "Popularité : Profils Python vs Autres",
+    subtitle = "Comparaison du nombre d'étoiles (échelle logarithmique)",
+    x = "Utilise Python",
+    y = "Total Stars (Log Scale)"
+  ) +
+  scale_fill_manual(values = c("FALSE" = "#E8E8E8", "TRUE" = "#377EB8")) +
+  theme_light() +
+  theme(legend.position = "none")
+```
+
+**Interprétation :** Le boxplot en échelle logarithmique permet de comparer visuellement la distribution des étoiles entre les deux groupes. Si les boîtes à moustaches sont à des hauteurs différentes, cela suggère un écart potentiel de popularité. L'échelle logarithmique est essentielle ici car elle compresse les très grandes différences et rend la visualisation lisible. Une médiane plus élevée pour le groupe "Python = TRUE" suggérerait que Python pourrait être associé à une plus grande popularité.
+
+### JavaScript
+
+```{webr-r}
+# Impact de JavaScript sur la popularité
+ggplot(df, aes(x = has_javascript, y = total_stars, fill = has_javascript)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_log10() +
+  labs(
+    title = "Impact de JavaScript sur la popularité",
+    subtitle = "Comparaison du nombre d'étoiles (échelle logarithmique)",
+    x = "Utilise JavaScript",
+    y = "Total Stars (Log)"
+  ) +
+  scale_fill_manual(values = c("FALSE" = "#E8E8E8", "TRUE" = "#FDB462")) +
+  theme_classic() +
+  theme(legend.position = "none")
+```
+
+**Interprétation :** Similaire à l'analyse Python, ce graphique compare la popularité des profils utilisant JavaScript. JavaScript étant le langage le plus utilisé pour le développement web, on pourrait s'attendre à ce que les profils utilisant JavaScript soient plus nombreux. Cependant, cela ne garantit pas nécessairement une plus grande popularité moyenne, car la qualité et la visibilité des projets sont plus importantes que le simple choix technologique.
+
+# Tests statistiques
+
+## Test de Wilcoxon pour Python
+
+**Question de recherche** : Est-ce que les profils utilisant Python ont significativement plus d'étoiles que les autres ?
+
+```{webr-r}
+# Test statistique de Wilcoxon pour Python
+cat("=== Test de différence significative pour Python ===\n")
+test_python <- wilcox.test(total_stars ~ has_python, data = df)
+print(test_python)
+
+# Interprétation
+if (test_python$p.value < 0.05) {
+  cat("\n✓ Résultat significatif (p < 0.05) : Il existe une différence significative\n")
+} else {
+  cat("\n✗ Résultat non significatif (p >= 0.05) : Pas de différence significative détectée\n")
+}
+```
+
+**Interprétation :** Le test de Wilcoxon (test non-paramétrique de Mann-Whitney) est choisi car il ne fait pas d'hypothèse sur la distribution normale des données, ce qui est approprié ici compte tenu de l'asymétrie observée. Si p < 0.05, on rejette l'hypothèse nulle d'égalité des distributions et on conclut qu'il existe une différence statistiquement significative entre les deux groupes. Cependant, un résultat significatif ne signifie pas nécessairement une causalité - il pourrait s'agir d'une simple corrélation due à d'autres facteurs.
+
+## Test de Wilcoxon pour JavaScript
+
+```{webr-r}
+# Test statistique de Wilcoxon pour JavaScript
+cat("=== Test de différence significative pour JavaScript ===\n")
+test_javascript <- wilcox.test(total_stars ~ has_javascript, data = df)
+print(test_javascript)
+
+# Interprétation
+if (test_javascript$p.value < 0.05) {
+  cat("\n✓ Résultat significatif (p < 0.05) : Il existe une différence significative\n")
+} else {
+  cat("\n✗ Résultat non significatif (p >= 0.05) : Pas de différence significative détectée\n")
+}
+```
+
+**Interprétation :** De la même manière que pour Python, ce test évalue si l'utilisation de JavaScript est associée à une différence significative de popularité. Un résultat non significatif pourrait indiquer que JavaScript est si répandu qu'il n'apporte pas de distinction particulière, ou que d'autres facteurs (qualité du code, timing, marketing) sont plus déterminants pour le succès que le simple choix du langage.
+
+# Organisations vs Individus
+
+```{webr-r}
+# Identification des organisations dans le dataset
+orgs_list <- c("openai", "github", "microsoft", "google")
+
+df <- df %>%
+  mutate(
+    type_profil = ifelse(login %in% orgs_list, "Organisation", "Individu")
+  )
+
+# Vérification
+table(df$type_profil)
+```
+
+```{webr-r}
+# Visualisation : Organisations vs Individus
+ggplot(df, aes(x = type_profil, y = total_stars, fill = type_profil)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_log10() +  # Échelle log pour mieux voir la différence
+  labs(
+    title = "Popularité : Organisations vs Individus",
+    subtitle = "Comparaison du nombre d'étoiles (échelle logarithmique)",
+    x = "Type de Profil",
+    y = "Total Stars (Log Scale)"
+  ) +
+  scale_fill_manual(values = c("Individu" = "#66C2A5", "Organisation" = "#FC8D62")) +
+  theme_light() +
+  theme(legend.position = "none")
+```
+
+**Interprétation :** Cette comparaison permet d'évaluer si les organisations ont un avantage structurel (ressources, équipes, visibilité) par rapport aux développeurs individuels. Les organisations majeures bénéficient généralement de budgets marketing, de communautés établies et de ressources pour maintenir et promouvoir leurs projets. Cependant, l'échantillon est petit pour les organisations (4 sur 30), ce qui limite la généralisation des résultats. Si les organisations montrent une popularité plus élevée, cela pourrait refléter leur capacité à investir dans le marketing et la maintenance à long terme.
+
+# Relation entre quantité de dépôts et popularité
+
+```{webr-r}
+# Relation entre nombre de dépôts et popularité
+ggplot(df, aes(x = nb_repos_fetched, y = total_stars)) +
+  geom_point(color = "darkgreen", size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", color = "red", linetype = "dashed", se = TRUE) +
+  labs(
+    title = "Relation : Nombre de dépôts récupérés vs Stars",
+    subtitle = "Si la ligne est plate, la quantité n'influence pas la popularité",
+    x = "Nombre de dépôts (nb_repos_fetched)",
+    y = "Total Stars"
+  ) +
+  theme_minimal()
+```
+
+**Interprétation :** Ce graphique explore si "plus de projets = plus de popularité". La ligne de régression montre la tendance générale : une pente positive suggère que publier plus de projets pourrait augmenter la visibilité, tandis qu'une ligne plate indiquerait que la quantité n'est pas le facteur déterminant. Cependant, la relation pourrait être inverse : certains profils très populaires peuvent avoir moins de projets mais de meilleure qualité. La bande de confiance (zone grise) montre l'incertitude autour de cette relation.
+
+## Test de corrélation
+
+```{webr-r}
+# Test de corrélation entre nombre de dépôts et étoiles
+cor_test_repos <- cor.test(df$nb_repos_fetched, df$total_stars, method = "spearman")
+cat("=== Test de corrélation (Spearman) ===\n")
+print(cor_test_repos)
+```
+
+**Interprétation :** Le test de corrélation de Spearman mesure la force de la relation monotone (pas nécessairement linéaire) entre les deux variables. Un coefficient proche de 0 indique l'absence de corrélation, tandis qu'une valeur proche de +1 ou -1 indique une forte corrélation positive ou négative. Le test de Spearman est préféré au test de Pearson car il est plus robuste aux valeurs aberrantes et ne nécessite pas d'hypothèse de normalité.
+
+# Analyse de la diversité technologique
+
+## Calcul du nombre de langages par profil
+
+```{webr-r}
+# Calculer le nombre de langages par profil
+df$num_languages <- stringr::str_count(df$languages_list, ",") + 1
+
+# Statistiques descriptives
+cat("=== Statistiques sur le nombre de langages ===\n")
+summary(df$num_languages)
+
+# Visualisation
+ggplot(df, aes(x = num_languages)) +
+  geom_histogram(fill = "purple", bins = 10, color = "white", alpha = 0.7) +
+  labs(
+    title = "Distribution du nombre de langages utilisés",
+    x = "Nombre de langages",
+    y = "Fréquence"
+  ) +
+  theme_minimal()
+```
+
+**Interprétation :** Le calcul du nombre de langages permet d'évaluer la diversité technologique de chaque profil. Un nombre élevé de langages pourrait indiquer une polyvalence technique, mais aussi une dispersion potentielle des efforts. L'histogramme montre la distribution de cette diversité dans l'échantillon, révélant si la plupart des profils se spécialisent (peu de langages) ou sont polyvalents (beaucoup de langages).
+
+## Corrélation entre diversité et popularité
+
+```{webr-r}
+# Test de corrélation de Spearman (adapté aux petites données non-normales)
+cor_test_lang <- cor.test(df$num_languages, df$total_stars, method = "spearman")
+
+cat("=== Test de corrélation : Nombre de langages vs Popularité ===\n")
+print(cor_test_lang)
+```
+
+**Interprétation :** Ce test évalue si la diversité technologique est un atout ou un handicap pour la popularité. Une corrélation positive suggérerait que la polyvalence est appréciée, tandis qu'une corrélation négative pourrait indiquer que la spécialisation mène à de meilleurs résultats. Une absence de corrélation significative signifierait que la diversité technologique n'est pas un facteur déterminant de la popularité.
+
+```{webr-r}
+# Visualisation de la relation
+ggplot(df, aes(x = num_languages, y = total_stars)) +
+  geom_point(aes(color = total_stars), size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "dashed") +
+  scale_y_log10() +
+  scale_color_gradient(low = "blue", high = "red") +
+  labs(
+    title = "Diversité technologique vs Popularité",
+    subtitle = "Relation entre le nombre de langages et le nombre d'étoiles",
+    x = "Nombre de langages utilisés",
+    y = "Total Stars (Log)",
+    color = "Étoiles"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right")
+```
+
+**Interprétation :** Le nuage de points avec gradient de couleur permet de visualiser à la fois la relation entre diversité et popularité, ainsi que l'identification visuelle des profils les plus populaires (points rouges). La ligne de régression indique la tendance générale, mais les points individuels peuvent révéler des exceptions intéressantes. Par exemple, certains profils peuvent être très populaires avec peu de langages (spécialisation réussie) ou avec beaucoup de langages (polyvalence réussie).
+
+# Analyse de la "puissance" des langages
+
+## Identification des superstars
+
+```{webr-r}
+# Définir le seuil du top 25%
+seuil_top <- quantile(df$total_stars, 0.75)
+df$is_superstar <- df$total_stars >= seuil_top
+
+cat("=== Seuil pour être considéré comme 'Superstar' (top 25%) ===\n")
+cat("Seuil :", seuil_top, "étoiles\n\n")
+cat("Nombre de superstars :", sum(df$is_superstar), "\n")
+```
+
+**Interprétation :** La définition des "superstars" comme étant dans le top 25% permet de créer un groupe d'élite pour comparaison. Le quantile 0.75 (Q3) est un seuil objectif qui sépare naturellement les profils les plus performants. Environ 7-8 profils devraient être identifiés comme superstars, ce qui représente un échantillon suffisant pour des comparaisons statistiques significatives.
+
+## Comparaison des langages pour les superstars
+
+```{webr-r}
+# Comparaison des langages pour les superstars vs autres
+lang_summary <- df %>%
+  group_by(is_superstar) %>%
+  summarise(
+    Pct_Python = mean(has_python) * 100,
+    Pct_JS = mean(has_javascript) * 100,
+    Pct_TS = mean(has_typescript) * 100,
+    .groups = "drop"
+  )
+
+cat("=== Pourcentage d'utilisation des langages ===\n")
+cat("Chez les Superstars vs Autres :\n")
+print(lang_summary)
+```
+
+**Interprétation :** Cette analyse compare les préférences technologiques entre les profils les plus populaires et les autres. Si un langage apparaît significativement plus souvent chez les superstars, cela pourrait suggérer que ce langage offre des avantages (écosystème riche, communauté active, outils performants) ou que les superstars tendent à choisir ce langage pour des raisons stratégiques. Cependant, il faut éviter de conclure à une relation causale directe.
+
+## Visualisation comparée
+
+```{webr-r}
+# Préparation des données pour la visualisation
+lang_summary_long <- lang_summary %>%
+  pivot_longer(
+    cols = c(Pct_Python, Pct_JS, Pct_TS),
+    names_to = "Langage",
+    values_to = "Pourcentage"
+  ) %>%
+  mutate(
+    Langage = case_when(
+      Langage == "Pct_Python" ~ "Python",
+      Langage == "Pct_JS" ~ "JavaScript",
+      Langage == "Pct_TS" ~ "TypeScript"
+    ),
+    Type = ifelse(is_superstar, "Superstar", "Autres")
+  )
+
+# Graphique en barres groupées
+ggplot(lang_summary_long, aes(x = Langage, y = Pourcentage, fill = Type)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.8) +
+  labs(
+    title = "Utilisation des langages : Superstars vs Autres",
+    subtitle = "Pourcentage de profils utilisant chaque langage",
+    x = "Langage de programmation",
+    y = "Pourcentage (%)",
+    fill = "Type de profil"
+  ) +
+  scale_fill_manual(values = c("Superstar" = "#E31A1C", "Autres" = "#1F78B4")) +
+  theme_minimal() +
+  theme(legend.position = "right")
+```
+
+**Interprétation :** Le graphique en barres groupées permet une comparaison visuelle directe. Des barres de hauteur similaire indiquent que le langage est également utilisé dans les deux groupes, tandis que des différences importantes suggèrent une préférence marquée dans un groupe. Cette visualisation aide à identifier rapidement si certains langages sont des "marchés" des superstars ou si la répartition est homogène.
+
+# Détection des valeurs atypiques (Outliers)
+
+```{webr-r}
+# Identification des outliers avec la méthode IQR
+Q1 <- quantile(df$total_stars, 0.25)
+Q3 <- quantile(df$total_stars, 0.75)
+IQR_val <- Q3 - Q1
+borne_sup <- Q3 + 1.5 * IQR_val
+
+outliers <- df[df$total_stars > borne_sup, ]
+
+cat("=== Détection des valeurs atypiques (méthode IQR) ===\n")
+cat("Q1 :", Q1, "\n")
+cat("Q3 :", Q3, "\n")
+cat("IQR :", IQR_val, "\n")
+cat("Borne supérieure (Q3 + 1.5 × IQR) :", borne_sup, "\n\n")
+cat("Nombre de profils considérés comme des anomalies statistiques (Superstars) :", 
+    nrow(outliers), "\n\n")
+cat("=== Profils identifiés comme outliers ===\n")
+print(outliers[, c("login", "name", "total_stars", "company")])
+```
+
+**Interprétation :** La méthode IQR (Interquartile Range) est une technique standard pour identifier les valeurs atypiques. Tout profil dont le nombre d'étoiles dépasse Q3 + 1.5×IQR est considéré comme un outlier. Ces profils sont statistiquement exceptionnels - ils se démarquent nettement du reste de la population. Identifier ces profils permet de comprendre les facteurs qui créent des succès exceptionnels, mais aussi de décider s'il faut les inclure ou les exclure de certaines analyses qui pourraient être biaisées par leur présence.
+
+```{webr-r}
+# Visualisation avec identification des outliers
+ggplot(df, aes(x = "", y = total_stars)) +
+  geom_boxplot(fill = "lightblue", alpha = 0.7, outlier.color = "red", outlier.size = 3) +
+  scale_y_log10() +
+  labs(
+    title = "Distribution des étoiles avec détection des outliers",
+    subtitle = "Les points rouges représentent les valeurs atypiques",
+    x = "",
+    y = "Total Stars (Log Scale)"
+  ) +
+  theme_minimal()
+```
+
+**Interprétation :** Le boxplot visualise clairement les outliers comme des points rouges au-delà des moustaches. Cette représentation permet de voir immédiatement l'ampleur de l'écart entre les profils normaux et les exceptions. L'échelle logarithmique est cruciale ici car elle permet de voir à la fois les profils normaux et les outliers sur le même graphique, sans que les outliers masquent complètement la distribution principale.
+
+# Analyse de texte : Nuage de mots des entreprises
+
+```{webr-r}
+# Créer un tableau de fréquence des entreprises (en ignorant "Unknown" et valeurs vides)
+comp_freq <- df %>%
+  filter(company != "Unknown" & company != "" & !is.na(company)) %>%
+  count(company, sort = TRUE)
+
+# Vérifier s'il y a des données
+if (nrow(comp_freq) > 0) {
+  # Créer le nuage de mots
+  wordcloud(
+    words = comp_freq$company,
+    freq = comp_freq$n,
+    min.freq = 1,
+    colors = brewer.pal(8, "Dark2"),
+    random.order = FALSE,
+    rot.per = 0.35,
+    scale = c(3, 0.5)
+  )
+  
+  cat("=== Fréquence des entreprises ===\n")
+  print(comp_freq)
+} else {
+  cat("Pas assez de données d'entreprises pour créer un nuage de mots.\n")
+}
+```
+
+**Interprétation :** Le nuage de mots (wordcloud) offre une visualisation intuitive de l'écosystème des entreprises représentées dans l'échantillon. La taille des mots est proportionnelle à leur fréquence, permettant d'identifier rapidement les entreprises les plus présentes. Cela révèle quelles organisations emploient ou attirent les développeurs les plus influents sur GitHub. Le tableau de fréquences fournit les valeurs exactes pour une analyse plus précise. Cette analyse contextuelle aide à comprendre l'environnement professionnel des profils étudiés.
+
+# Synthèse et conclusions
+
+## Résultats principaux
+
+```{webr-r}
+cat("=== SYNTHÈSE DES RÉSULTATS ===\n\n")
+
+# 1. Distribution de la popularité
+cat("1. DISTRIBUTION DE LA POPULARITÉ\n")
+cat("   - Médiane des étoiles :", median(df$total_stars), "\n")
+cat("   - Moyenne des étoiles :", round(mean(df$total_stars), 2), "\n")
+cat("   - Écart-type :", round(sd(df$total_stars), 2), "\n\n")
+
+# 2. Impact des langages
+cat("2. IMPACT DES LANGAGES\n")
+cat("   - Profils utilisant Python :", sum(df$has_python), "sur", nrow(df), "\n")
+cat("   - Profils utilisant JavaScript :", sum(df$has_javascript), "sur", nrow(df), "\n")
+cat("   - Profils utilisant TypeScript :", sum(df$has_typescript), "sur", nrow(df), "\n\n")
+
+# 3. Types de profils
+cat("3. TYPES DE PROFILS\n")
+profile_summary <- df %>%
+  group_by(type_profil) %>%
+  summarise(
+    Nombre = n(),
+    Moyenne_étoiles = round(mean(total_stars), 2),
+    Médiane_étoiles = round(median(total_stars), 2),
+    .groups = "drop"
+  )
+print(profile_summary)
+cat("\n")
+
+# 4. Diversité technologique
+cat("4. DIVERSITÉ TECHNOLOGIQUE\n")
+cat("   - Nombre moyen de langages :", round(mean(df$num_languages), 2), "\n")
+cat("   - Nombre médian de langages :", median(df$num_languages), "\n")
+cat("   - Corrélation avec la popularité (Spearman) :", 
+    round(cor_test_lang$estimate, 3), "\n")
+cat("   - p-value :", round(cor_test_lang$p.value, 4), "\n")
+```
+
+**Interprétation :** Cette synthèse quantitative résume les principales découvertes de l'analyse. La comparaison entre médiane et moyenne révèle le degré d'asymétrie : si la moyenne est beaucoup plus élevée que la médiane, cela confirme la présence de quelques profils extrêmement populaires qui tirent la moyenne vers le haut. Les statistiques sur les langages montrent leur prévalence relative dans l'échantillon. La comparaison organisations/individus quantifie l'écart de popularité moyen entre les deux groupes. Enfin, les métriques de diversité technologique et leur corrélation avec la popularité fournissent une mesure objective de l'importance de la polyvalence vs spécialisation.
+
+## Interprétation
+
+### 1. Distribution de la popularité
+
+La distribution des étoiles est fortement asymétrique, avec quelques profils exceptionnellement populaires (outliers) et une grande majorité de profils avec une popularité modérée. Cette distribution justifie l'utilisation d'échelles logarithmiques pour les visualisations.
+
+### 2. Impact des langages de programmation
+
+L'analyse révèle que :
+
+- **Python** et **JavaScript** sont parmi les langages les plus représentés dans les profils populaires.
+- Les tests statistiques (Wilcoxon) permettent de déterminer si l'utilisation d'un langage spécifique est associée à une popularité significativement plus élevée.
+
+### 3. Organisations vs Individus
+
+Les organisations majeures (OpenAI, GitHub, Microsoft, Google) présentent généralement des niveaux de popularité très élevés, mais cette différence doit être interprétée avec prudence compte tenu du faible nombre d'organisations dans l'échantillon.
+
+### 4. Diversité technologique
+
+L'analyse de corrélation entre le nombre de langages utilisés et la popularité permet d'évaluer si la polyvalence technologique est un facteur de succès.
+
+## Limitations
+
+1. **Taille de l'échantillon** : 30 profils est un échantillon relativement petit pour des généralisations statistiques.
+2. **Biais de sélection** : Les profils sélectionnés sont déjà parmi les plus populaires, ce qui peut créer un biais.
+3. **Facteurs confondants** : De nombreux autres facteurs (qualité du code, documentation, communauté, etc.) influencent la popularité et ne sont pas pris en compte dans cette analyse.
+
+## Perspectives
+
+Cette analyse pourrait être étendue en :
+
+- Augmentant la taille de l'échantillon
+- Ajoutant des variables temporelles (évolution dans le temps)
+- Analysant d'autres métriques (forks, contributions, etc.)
+- Intégrant des données sur la localisation géographique des contributeurs
+
+---
+
+# Références
+
+- Wickham, H., & Grolemund, G. (2016). *R for Data Science*. O'Reilly Media.
+- Wickham, H., Averick, M., Bryan, J., Chang, W., McGowan, L., François, R., ... & Yutani, H. (2019). Welcome to the tidyverse. *Journal of Open Source Software*, 4(43), 1686.
+- R Core Team (2023). *R: A language and environment for statistical computing*. R Foundation for Statistical Computing, Vienna, Austria.
+

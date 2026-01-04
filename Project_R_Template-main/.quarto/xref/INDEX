@@ -1,0 +1,70 @@
+{
+  "index.qmd": {
+    "index.html": "a0223fa1",
+    "index.tex": "4bd16c94"
+  },
+  "qmd/01-pivot-tables-with-libreoffice.qmd": {
+    "01-pivot-tables-with-libreoffice.html": "a4ae749c"
+  },
+  "qmd/03-discharge-elbe-project.qmd": {
+    "03-discharge-elbe-project.html": "8c8c838d"
+  },
+  "qmd/03-discharge-elbe.qmd": {
+    "03-discharge-elbe.html": "41c23762"
+  },
+  "qmd/04-distributions-leaves.qmd": {
+    "04-distributions-leaves.html": "edf5874f"
+  },
+  "qmd/05-distributions-fruits-tidyverse.qmd": {
+    "05-distributions-fruits-tidyverse.html": "1dd204f5"
+  },
+  "qmd/06-classical-tests.qmd": {
+    "06-classical-tests.html": "2f50ccca"
+  },
+  "qmd/07-correlation.qmd": {
+    "07-correlation.html": "303f3d19"
+  },
+  "qmd/08-vollenweider-chl-tp.qmd": {
+    "08-vollenweider-chl-tp.html": "3327419f"
+  },
+  "qmd/09-clementines-anova.qmd": {
+    "09-clementines-anova.html": "090f100d"
+  },
+  "qmd/10-nonlinear-regression-solution.qmd": {
+    "10-nonlinear-regression-solution.html": "ee56e901"
+  },
+  "qmd/10-nonlinear-regression.qmd": {
+    "10-nonlinear-regression.html": "f991f2cd"
+  },
+  "qmd/12-timeseries-trends.qmd": {
+    "12-timeseries-trends.html": "a6ebd098"
+  },
+  "qmd/13-timeseries-breakpoints.qmd": {
+    "13-timeseries-breakpoints.html": "06e71c20"
+  },
+  "qmd/14-flood-risk.qmd": {
+    "14-flood-risk.html": "c5748f03"
+  },
+  "qmd/15-multivariate-small-streams.qmd": {
+    "15-multivariate-small-streams.html": "0f83e206"
+  },
+  "qmd/temp1.qmd": {
+    "temp1.html": "2c47469f",
+    "temp1.tex": "481c4198"
+  },
+  "qmd/temp2.qmd": {
+    "temp2.html": "9b308a3c"
+  },
+  "qmd/temp3.qmd": {
+    "temp3.html": "c88b5a66"
+  },
+  "qmd/temp4.qmd": {
+    "temp4.html": "091479b2"
+  },
+  "qmd/01-analyse-profiles-github.qmd": {
+    "01-analyse-profiles-github.html": "122eb929"
+  },
+  "qmd/02-presentation-profiles-github.qmd": {
+    "02-presentation-profiles-github.html": "72a5c60e"
+  }
+}
