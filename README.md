@@ -29,6 +29,3 @@ L'analyse répond à 5 questions de recherche fondamentales :
 
 
 
-1. **Cloner le dépôt** :
-   ```bash
-   git clone [https://github.com/votre-username/nom-du-repo.git](https://github.com/votre-username/nom-du-repo.git)
